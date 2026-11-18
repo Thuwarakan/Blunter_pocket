@@ -22,6 +22,7 @@ env:
   BLA_BUILD: /mnt/bla
   CCACHE_DIR: /mnt/bla/ccache
   CCACHE_MAXSIZE: 5G
+  NDK_VERSION: 30.0.16248370
 
 jobs:
   apk:
@@ -51,6 +52,14 @@ jobs:
           git lfs install
           cmake --version | head -1
           echo "NDKs installed:"; ls "$ANDROID_HOME/ndk" || true
+          # The pre-built lib/android_arm64 needs the libc++ of NDK r30 (clang 21); the
+          # runner's default ANDROID_NDK_ROOT is older. Pin the exact NDK used.
+          ndk="$ANDROID_HOME/ndk/$NDK_VERSION"
+          if [[ ! -f "$ndk/source.properties" ]]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$NDK_VERSION" >/dev/null
+          fi
+          echo "ANDROID_NDK_ROOT=$ndk" >> "$GITHUB_ENV"
+          grep Pkg.Revision "$ndk/source.properties"
 
       - name: Restore ccache
         uses: actions/cache/restore@v4

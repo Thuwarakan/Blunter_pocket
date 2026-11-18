@@ -73,7 +73,11 @@ cmd_fetch() {
   local libs
   for libs in "$target_libs" "$(host_lib_dir)"; do
     log "submodule $libs"
-    git "${GIT_PB[@]}" -C "$BLENDER_SRC" submodule update --init --depth 1 "$libs"
+    # Blender's .gitmodules marks lib/* as `update = none` (normally driven by `make update`),
+    # so force a checkout for the two we need.
+    git "${GIT_PB[@]}" -c "submodule.$libs.update=checkout" -C "$BLENDER_SRC" \
+      submodule update --init --depth 1 "$libs"
+    [[ -n "$(ls -A "$BLENDER_SRC/$libs")" ]] || die "$libs is empty after checkout"
     git "${GIT_PB[@]}" -C "$BLENDER_SRC/$libs" lfs pull
   done
 
