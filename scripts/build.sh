@@ -102,6 +102,18 @@ cmd_blender() {
   # tests/python aborts configure ("No Python configured for running tests"). The tests are
   # only registered, never run, for Android: any host Python satisfies the check.
   local cmake_args="-DTEST_PYTHON_EXE=$(command -v python3)"
+  # The host code generators (host_tools sub-build) use the host compiler from CC/CXX and
+  # Blender needs GCC >= 14 or Clang >= 17. The Android build itself is unaffected: the NDK
+  # toolchain file sets its own compilers.
+  if [[ -z "${CC:-}" ]]; then
+    local c
+    for c in gcc-15:g++-15 gcc-14:g++-14 clang-19:clang++-19 clang-18:clang++-18 clang-17:clang++-17; do
+      if command -v "${c%%:*}" >/dev/null && command -v "${c##*:}" >/dev/null; then
+        export CC=${c%%:*} CXX=${c##*:}; break
+      fi
+    done
+  fi
+  log "host compiler for code generators: ${CC:-system default} / ${CXX:-system default}"
   log "building libblender.so in $BUILD_DIR"
   # Upstream's GNUmakefile handles the toolchain file, host code generators and LIBDIR.
   make -C "$BLENDER_SRC" android "$BLA_ABI" BUILD_DIR="$BUILD_DIR" \
