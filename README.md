@@ -28,7 +28,7 @@ See [`docs/plan.md`](docs/plan.md) for the phase plan, including Claude integrat
 | Phase | Topic | State |
 |---|---|---|
 | 1 | Analysis ([`docs/phase1-analysis.md`](docs/phase1-analysis.md)) | ✅ |
-| 2 | Reproducible build of the official branch + branding | 🔄 |
+| 2 | Reproducible build of the official branch + branding ([report](docs/phase2-report.md)) | ✅ builds · ⏳ on-device check |
 | 3 | GPU coverage (Mali, older drivers) | ⏳ |
 | 4 | Touch / stylus / keyboard, modifier bar, DPI | ⏳ |
 | 5 | Storage (SAF), lifecycle, autosave, security | ⏳ |

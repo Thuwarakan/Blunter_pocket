@@ -93,6 +93,19 @@ jobs:
       - name: Assemble APK
         run: scripts/build.sh apk
 
+      - name: Verify APK identity, SDK levels and native libraries
+        run: |
+          apk=$(ls "$BLA_BUILD"/out/*.apk)
+          aapt2=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)aapt2
+          "$aapt2" dump badging "$apk" | grep -E "^(package|sdkVersion|targetSdkVersion|application-label|native-code):" | tee badging.txt
+          source branding/branding.env
+          grep -q "package: name='$APP_ID'" badging.txt
+          grep -q "application-label:'$APP_NAME'" badging.txt
+          grep -q "sdkVersion:'29'" badging.txt
+          grep -q "native-code: 'arm64-v8a'" badging.txt
+          unzip -l "$apk" | grep -E 'lib/arm64-v8a/.*\.so$' | awk '{s+=$1; n++} END {printf "%d native libraries, %.0f MB uncompressed\n", n, s/1048576}'
+          unzip -l "$apk" | grep -cE '^ .*assets/' | xargs echo "asset entries:"
+
       - uses: actions/upload-artifact@v4
         with:
           name: android-arm64-apk
