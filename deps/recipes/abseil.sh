@@ -1,6 +1,0 @@
-# Abseil (ABSEIL) – Ceres dependency.
-build() {
-  unpack ABSEIL
-  cmake_build -DABSL_PROPAGATE_CXX_STD=ON -DCMAKE_CXX_STANDARD=17 -DABSL_BUILD_TESTING=OFF \
-    -DABSL_ENABLE_INSTALL=ON
-}

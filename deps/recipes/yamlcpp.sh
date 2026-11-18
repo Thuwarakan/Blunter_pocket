@@ -1,6 +1,0 @@
-# yaml-cpp (YAMLCPP) – OpenColorIO dependency.
-build() {
-  unpack YAMLCPP
-  cmake_build -DYAML_CPP_BUILD_TESTS=OFF -DYAML_CPP_BUILD_TOOLS=OFF \
-    -DYAML_CPP_BUILD_CONTRIB=OFF -DYAML_BUILD_SHARED_LIBS=OFF
-}

@@ -1,0 +1,101 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Build the APK from Blender's official `android` branch (upstream/blender.lock)
+# plus this project's patches and branding, and upload it as an artifact.
+name: android-apk
+
+on:
+  push:
+    paths:
+      - 'upstream/**'
+      - 'patches/**'
+      - 'branding/**'
+      - 'scripts/**'
+      - '.github/workflows/android-apk.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BLA_BUILD: /mnt/bla
+  CCACHE_DIR: /mnt/bla/ccache
+  CCACHE_MAXSIZE: 5G
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space, create build root on /mnt
+        run: |
+          df -h / /mnt
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/node_modules /opt/ghc /usr/local/.ghcup \
+                      /usr/local/share/boost /usr/share/swift /usr/local/share/powershell \
+                      /opt/hostedtoolcache/CodeQL || true
+          sudo mkdir -p "$BLA_BUILD" && sudo chown "$USER" "$BLA_BUILD"
+          df -h / /mnt
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Host packages and toolchain info
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends ninja-build ccache git-lfs
+          git lfs install
+          cmake --version | head -1
+          echo "NDKs installed:"; ls "$ANDROID_HOME/ndk" || true
+
+      - name: Restore ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-apk-${{ github.run_id }}
+          restore-keys: ccache-apk-
+
+      - name: Fetch Blender, pre-built libraries, apply patches + branding
+        run: |
+          scripts/build.sh fetch
+          du -sh "$BLA_BUILD/blender/lib/"* || true
+          df -h /mnt
+
+      - name: Build libblender.so
+        # Shorter than the job limit so ccache is still saved on a cold build that runs out
+        # of time; the next run then resumes from the cache.
+        timeout-minutes: 300
+        run: |
+          ccache -z
+          scripts/build.sh blender
+          ccache -s
+
+      - name: Save ccache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-apk-${{ github.run_id }}
+
+      - name: Assemble APK
+        run: scripts/build.sh apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-arm64-apk
+          path: ${{ env.BLA_BUILD }}/out/*.apk
+          retention-days: 14
+
+      - name: Upload configure logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cmake-logs
+          path: |
+            ${{ env.BLA_BUILD }}/build_android_arm64/CMakeCache.txt
+            ${{ env.BLA_BUILD }}/build_android_arm64/CMakeFiles/CMakeConfigureLog.yaml
+          if-no-files-found: ignore

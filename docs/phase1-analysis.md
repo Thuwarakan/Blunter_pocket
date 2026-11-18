@@ -374,3 +374,28 @@ docs/
 3. **NDK access in this session.** Allow `dl.google.com` in the environment's network settings, or rely on CI only.
 
 **Next (Phase 2):** toolchain files (CMake + meson cross + autotools env), per-library build scripts in dependency order for the **H** set, host-tools stage, and a headless `blender` executable run through `adb shell` against a test `.blend` + Python script.
+
+---
+
+## Addendum (after Phase 1): the official `android` branch
+
+This analysis covered the **v5.3.0 tag only** and missed that upstream Blender maintains an
+official `android` branch (and an `ios` branch). That branch already solves several items
+above:
+
+- **§1.1 GHOST:** uses the SDL3 backend (`WITH_GHOST_SDL` forced on for Android) with
+  `SDLActivity` instead of a new native backend.
+- **§1.6 `BLI_subprocess`:** fixed upstream with the same `!defined(__ANDROID__)` guard.
+- **§3.1 host tools:** solved by `build_files/cmake/host_tools.cmake` (a host sub-build) plus
+  pre-built host libraries.
+- **§2 dependencies:** built by Blender's own `build_environment` for Android and shipped as
+  `lib/android_arm64`.
+- **§3.3 swapchain items 3 (pre-transform), rotation and resize:** handled upstream.
+
+Still open upstream, and therefore in this project's scope:
+
+- **§3.3 items 1, 2, 5–7:** `geometryShader` and the other hard device requirements, mobile
+  vendor IDs / TBDR, memory limits, unsupported-device UX.
+- **Phase 4–5 UX:** the touch scheme, modifier bar, SAF, autosave and branding.
+
+See `docs/plan.md` for the revised plan.

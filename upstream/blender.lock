@@ -1,5 +1,7 @@
-# Upstream Blender revision this port is built against.
-# Bump these together when rebasing onto a newer release.
-BLENDER_GIT_URL=https://github.com/blender/blender.git
-BLENDER_TAG=v5.3.0
-BLENDER_COMMIT=02f0899d78e374b63e7181d9061e1f7ab03419cc
+# Upstream Blender revision this port is built on: the official `android` branch
+# (cross-compilation, prebuilt lib/android_arm64, SDL3 GHOST, Gradle packaging).
+# Bump these together when rebasing; scripts/build.sh refuses a mismatching checkout.
+BLENDER_GIT_URL=https://projects.blender.org/blender/blender.git
+BLENDER_GIT_MIRROR=https://github.com/blender/blender.git
+BLENDER_BRANCH=android
+BLENDER_COMMIT=e1cb584828e8f9cb1083933d495e27d96cbbd4fd

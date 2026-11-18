@@ -1,6 +1,0 @@
-# libdeflate (DEFLATE) – used by OpenEXR and TIFF.
-build() {
-  unpack DEFLATE
-  cmake_build -DLIBDEFLATE_BUILD_STATIC_LIB=ON -DLIBDEFLATE_BUILD_SHARED_LIB=OFF \
-    -DLIBDEFLATE_BUILD_GZIP=OFF
-}
