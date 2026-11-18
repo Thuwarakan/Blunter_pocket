@@ -1,0 +1,159 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Phase 2: cross-compile the dependencies and a static headless Blender for
+# Android arm64, then smoke-test it (open a .blend, run Python, render with Cycles).
+name: android-headless
+
+on:
+  push:
+    paths:
+      - 'deps/**'
+      - 'android/cmake/**'
+      - 'patches/**'
+      - 'scripts/**'
+      - 'tests/smoke/**'
+      - 'upstream/**'
+      - '.github/workflows/android-headless.yml'
+  workflow_dispatch:
+    inputs:
+      force_deps:
+        description: 'Rebuild all dependencies (ignore cache)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: android-headless-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NDK_VERSION: 27.3.13750724
+  BLA_BUILD: /mnt/bla
+  CCACHE_DIR: /mnt/bla/ccache
+
+jobs:
+  deps:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare build machine
+        uses: ./.github/actions/setup-build-host
+
+      - name: Restore dependency cache
+        if: ${{ !inputs.force_deps }}
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ env.BLA_BUILD }}/lib
+            ${{ env.BLA_BUILD }}/downloads
+          key: deps-${{ hashFiles('deps/**', 'upstream/blender.lock') }}-${{ github.run_id }}
+          restore-keys: |
+            deps-${{ hashFiles('deps/**', 'upstream/blender.lock') }}-
+            deps-
+
+      - name: Fetch Blender
+        run: scripts/build.sh fetch-blender
+
+      - name: Build dependencies
+        run: scripts/build.sh deps
+
+      - name: Save dependency cache (also after failures, to resume)
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ env.BLA_BUILD }}/lib
+            ${{ env.BLA_BUILD }}/downloads
+          key: deps-${{ hashFiles('deps/**', 'upstream/blender.lock') }}-${{ github.run_id }}
+
+      - name: Upload dependency logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deps-logs
+          path: ${{ env.BLA_BUILD }}/logs
+          if-no-files-found: ignore
+
+  headless:
+    needs: deps
+    runs-on: ubuntu-24.04
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare build machine
+        uses: ./.github/actions/setup-build-host
+
+      - name: Restore dependency cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ env.BLA_BUILD }}/lib
+            ${{ env.BLA_BUILD }}/downloads
+          key: deps-${{ hashFiles('deps/**', 'upstream/blender.lock') }}-${{ github.run_id }}
+          fail-on-cache-miss: true
+
+      - name: Restore ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-headless-${{ github.run_id }}
+          restore-keys: ccache-headless-
+
+      - name: Fetch Blender
+        run: scripts/build.sh fetch-blender
+
+      - name: Build Blender (headless, static)
+        run: |
+          ccache --max-size=4G
+          ccache -z
+          scripts/build.sh blender
+          ccache -s
+
+      - name: Save ccache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-headless-${{ github.run_id }}
+
+      - name: Smoke test under qemu-aarch64
+        run: scripts/build.sh smoke
+
+      - name: Package
+        run: |
+          tar -C "$BLA_BUILD/install" -czf "$BLA_BUILD/blender-android-arm64-headless.tar.gz" headless
+          ls -lh "$BLA_BUILD/blender-android-arm64-headless.tar.gz"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: blender-android-arm64-headless
+          path: ${{ env.BLA_BUILD }}/blender-android-arm64-headless.tar.gz
+          retention-days: 14
+
+      - name: Upload configure/build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: headless-cmake-logs
+          path: |
+            ${{ env.BLA_BUILD }}/blender-headless/CMakeCache.txt
+            ${{ env.BLA_BUILD }}/blender-headless/CMakeFiles/CMakeConfigureLog.yaml
+          if-no-files-found: ignore
+
+  smoke-arm64:
+    # Runs the static Android binary natively on an AArch64 Linux kernel (no emulation).
+    needs: headless
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: blender-android-arm64-headless
+      - run: |
+          mkdir -p install
+          tar -C install -xzf blender-android-arm64-headless.tar.gz
+          file install/headless/blender || true
+          tests/smoke/run_smoke.sh install/headless

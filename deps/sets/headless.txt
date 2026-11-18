@@ -1,0 +1,60 @@
+# Libraries for the Phase 2 headless build, in build order (dependencies first).
+# One name per line = deps/recipes/<name>.sh, installed to $LIBDIR/<name>.
+
+# Compression
+zlib
+zstd
+deflate
+brotli
+bzip2
+xz
+
+# Python's own dependencies
+libffi
+openssl
+sqlite
+
+# Images / fonts
+png
+jpeg
+tiff
+webp
+openjpeg
+freetype
+epoxy
+
+# Small C++ libraries
+fmt
+robinmap
+pugixml
+expat
+yamlcpp
+pystring
+minizipng
+sse2neon
+
+# OpenEXR stack
+imath
+openjph
+openexr
+
+# Threading
+tbb
+
+# Colour management / image I/O (both required by Blender)
+opencolorio
+openimageio
+
+# Solvers / geometry
+eigen
+abseil
+ceres
+fftw3
+gmp
+potrace
+haru
+opensubdiv
+manifold
+
+# Interpreter
+python
