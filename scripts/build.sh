@@ -94,10 +94,14 @@ cmd_blender() {
   [[ -n "${ANDROID_NDK_ROOT:-}" ]] && extra+=(ANDROID_NDK_ROOT="$ANDROID_NDK_ROOT")
   command -v ninja >/dev/null && extra+=(ninja)
   command -v ccache >/dev/null && extra+=(ccache)
+  # Upstream (android @ e1cb5848) leaves PYTHON_EXECUTABLE empty when cross-compiling, so
+  # tests/python aborts configure ("No Python configured for running tests"). The tests are
+  # only registered, never run, for Android: any host Python satisfies the check.
+  local cmake_args="-DTEST_PYTHON_EXE=$(command -v python3)"
   log "building libblender.so in $BUILD_DIR"
   # Upstream's GNUmakefile handles the toolchain file, host code generators and LIBDIR.
   make -C "$BLENDER_SRC" android "$BLA_ABI" BUILD_DIR="$BUILD_DIR" \
-    NPROCS="$BLA_JOBS" "${extra[@]}"
+    NPROCS="$BLA_JOBS" BUILD_CMAKE_ARGS="$cmake_args ${BUILD_CMAKE_ARGS:-}" "${extra[@]}"
 }
 
 cmd_apk() {
