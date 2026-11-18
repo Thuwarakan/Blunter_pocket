@@ -26,7 +26,11 @@ Feature set (upstream defaults, configure summary in the CI log):
 
 - `scripts/build.sh all` works end to end on a clean Linux x86-64 machine: fetch, patches, branding, `make android`, then Gradle.
 - Branding applied: package `io.github.thuwarakan.blunterpocket`, label "Blunter Pocket", our adaptive icon, Blender logo rasters removed.
-  - CI checks this inside the built APK with `aapt2 dump badging` (step added after run #4). It also checks minSdk 29 and arm64-v8a.
+  - Read back from the built APK by `aapt2 dump badging` in CI (run #5):
+    `package: name='io.github.thuwarakan.blunterpocket' versionCode='105030000' versionName='5.3.0-alpha'`,
+    `targetSdkVersion:'36'`, `application-label:'Blunter Pocket'`, `native-code: 'arm64-v8a'`.
+  - Run #5's verify step itself failed on a bug in the check: newer `aapt2` prints `minSdkVersion:`, not `sdkVersion:`. Fixed in the following commit.
+- Rebuild with a warm ccache: compile 48.5 min (vs. 66 min cold). Upstream's unity build limits cache reuse.
 - NDK pinned to `30.0.16248370`, JDK 21, Gradle 9.4.1 / AGP 9.2.0 (upstream wrapper).
 
 ## What is not verified yet
