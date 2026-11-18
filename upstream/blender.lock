@@ -1,0 +1,5 @@
+# Upstream Blender revision this port is built against.
+# Bump these together when rebasing onto a newer release.
+BLENDER_GIT_URL=https://github.com/blender/blender.git
+BLENDER_TAG=v5.3.0
+BLENDER_COMMIT=02f0899d78e374b63e7181d9061e1f7ab03419cc
