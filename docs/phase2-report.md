@@ -30,7 +30,12 @@ Feature set (upstream defaults, configure summary in the CI log):
     `package: name='io.github.thuwarakan.blunterpocket' versionCode='105030000' versionName='5.3.0-alpha'`,
     `targetSdkVersion:'36'`, `application-label:'Blunter Pocket'`, `native-code: 'arm64-v8a'`.
   - Run #5's verify step itself failed on a bug in the check: newer `aapt2` prints `minSdkVersion:`, not `sdkVersion:`. Fixed in the following commit.
-- Rebuild with a warm ccache: compile 48.5 min (vs. 66 min cold). Upstream's unity build limits cache reuse.
+- Run [#6](https://github.com/Thuwarakan/Blunter_pocket/actions/runs/44416649341): all checks pass.
+  - `minSdkVersion:'29'`, `targetSdkVersion:'36'`.
+  - **43 native libraries, 465 MB uncompressed**, 3,945 asset entries.
+- CI time with a warm ccache:
+  - compile 48.5 min on the first warm run, then **3 min** once the cache held the whole build;
+  - the whole job takes **14 min**, of which fetching is 8 min.
 - NDK pinned to `30.0.16248370`, JDK 21, Gradle 9.4.1 / AGP 9.2.0 (upstream wrapper).
 
 ## What is not verified yet
